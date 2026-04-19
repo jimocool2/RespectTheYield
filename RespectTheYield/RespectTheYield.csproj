@@ -1,0 +1,153 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<Configurations>Debug;Release</Configurations>
+		<Title>RespectTheYield</Title>
+		<RootNamespace>RespectTheYield</RootNamespace>
+		<AssemblyTitle>$(Title)</AssemblyTitle>
+		<Description>A Cities Skylines 2 mod.</Description>
+		<Product>$(Title)</Product>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<Version>1.0.0</Version>
+		<AssemblyVersion>$(Version).0</AssemblyVersion>
+		<FileVersion>$(Version).0</FileVersion>
+	</PropertyGroup>
+	
+	<!--Imports must be after PropertyGroup block-->
+	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
+	<Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
+
+	<ItemGroup>
+		<Compile Remove="obj\**\*.cs" />
+		<Compile Remove="temp\**\*.cs" />
+		<EmbeddedResource Remove="temp\**\*" />
+		<None Remove="temp\**\*" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants>$(DefineConstants);USE_BURST</DefineConstants>
+		<WarningLevel>4</WarningLevel>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>$(DefineConstants);ENABLE_PROFILER;IS_DEBUG;</DefineConstants>
+		<WarningLevel>4</WarningLevel>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<Reference Include="Game">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Traffic">
+			<HintPath>lib\Traffic.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Mathematics">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Logging">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.IO.AssetDatabase">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.UI">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.UI.Binding">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Colossal.Localization">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.InputSystem">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Burst">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Collections">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Entities">
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Unity.Mathematics">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Update="System">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Core">
+			<Private>false</Private>
+		</Reference>
+		<Reference Update="System.Data">
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup Label="Mod Toolchain">
+		<PackageReference Include="Lib.Harmony" Version="2.2.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
+		<None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+		<None Include=".github\copilot-instructions.md" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="lib\" />
+	  <Folder Include="Patches\" />
+	  <Folder Include="Properties\Changelog\" />
+	</ItemGroup>
+
+	<!-- Disable Burst compiler for Mac/Linux -->
+	<Target Name="CustomModPostProcessorConfig" AfterTargets="ModPostProcessorConfig">
+		<PropertyGroup>
+			<ModPostProcessorArgs>"$(ModPostProcessorFullPath)" PostProcess "$(TargetPath)" -u "$(UnityModProjectFullPath)" @(ReferencePath->'-r "%(Identity)"', ' ') -p Windows -d -v</ModPostProcessorArgs>
+		</PropertyGroup>
+	</Target>
+
+	<!-- Custom Build step to assemble the PublishConfiguration.xml -->
+	<Target Name="GeneratePublishConfiguration" AfterTargets="ModPublisherConfig">
+		<PropertyGroup>
+			<TargetConfigXml>$(ProjectDir)Properties\PublishConfiguration.xml</TargetConfigXml>
+			<ModVersion>$(Version)</ModVersion>
+			<LongDescFile>$(ProjectDir)Properties\LongDescription.md</LongDescFile>
+			<ChangelogFile>$(ProjectDir)Properties\Changelog\$(ModVersion).md</ChangelogFile>
+		</PropertyGroup>
+
+		<PropertyGroup>
+			<LongDescText Condition="Exists('$(LongDescFile)')">$([System.IO.File]::ReadAllText('$(LongDescFile)'))</LongDescText>
+			<ChangelogText Condition="Exists('$(ChangelogFile)')">$([System.IO.File]::ReadAllText('$(ChangelogFile)'))</ChangelogText>
+		</PropertyGroup>
+
+		<Copy SourceFiles="$(ProjectDir)Properties/PublishConfiguration.template.xml" DestinationFiles="$(TargetConfigXml)" />
+
+		<XmlPoke XmlInputPath="$(TargetConfigXml)" Query="/Publish/ModVersion/@Value" Value="$(ModVersion)" />
+		<XmlPoke XmlInputPath="$(TargetConfigXml)" Query="/Publish/LongDescription" Value="$(LongDescText)" />
+		<XmlPoke XmlInputPath="$(TargetConfigXml)" Query="/Publish/ChangeLog" Value="$(ChangelogText)" />
+
+		<Message Text="Updated $(TargetConfigXml) with Version $(ModVersion)" Importance="High" />
+	</Target>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="mkdir &quot;C:\Users\Jure\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\$(ProjectName)&quot;&#xD;&#xA;xcopy /Y /E &quot;$(TargetDir)*.*&quot; &quot;C:\Users\Jure\AppData\LocalLow\Colossal Order\Cities Skylines II\Mods\$(ProjectName)\&quot;" />
+	</Target>
+	
+</Project>
