@@ -2,6 +2,7 @@ namespace RespectTheYield.Jobs
 {
     using Game.Common;
     using Game.Vehicles;
+    using RespectTheYield.Helpers;
     using Traffic.Components.PrioritySigns;
     using Unity.Burst;
     using Unity.Burst.Intrinsics;

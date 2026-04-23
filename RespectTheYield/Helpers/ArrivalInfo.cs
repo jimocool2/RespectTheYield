@@ -1,4 +1,4 @@
-namespace RespectTheYield.Jobs
+namespace RespectTheYield.Helpers
 {
     using Traffic.Components.PrioritySigns;
     using Unity.Mathematics;
