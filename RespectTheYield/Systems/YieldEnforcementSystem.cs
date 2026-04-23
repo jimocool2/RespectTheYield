@@ -16,6 +16,10 @@ namespace RespectTheYield.Systems
         private EntityQuery m_YieldLaneQuery;
         private EntityQuery m_VehicleQuery;
 
+        // Cached controlled lanes rebuilt only when the yield-lane query changes.
+        private NativeHashSet<Entity> m_ControlledLanes;
+        private int m_LastYieldLaneCount;
+
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -40,7 +44,17 @@ namespace RespectTheYield.Systems
                 }
             });
 
+            m_ControlledLanes = new NativeHashSet<Entity>(64, Allocator.Persistent);
+            m_LastYieldLaneCount = -1;
+
             m_Log.Info("Created");
+        }
+
+        protected override void OnDestroy()
+        {
+            if (m_ControlledLanes.IsCreated)
+                m_ControlledLanes.Dispose();
+            base.OnDestroy();
         }
 
         protected override void OnUpdate()
@@ -51,75 +65,77 @@ namespace RespectTheYield.Systems
             if (m_YieldLaneQuery.IsEmpty)
                 return;
 
-            // Complete all pending jobs so we can safely read buffers on the main thread.
-            CompleteDependency();
-
-            var laneHandleEntities = m_YieldLaneQuery.ToEntityArray(Allocator.TempJob);
-            var laneHandles = m_YieldLaneQuery.ToComponentDataArray<LaneHandle>(Allocator.TempJob);
-
-            var controlledLanes = new NativeHashSet<Entity>(laneHandles.Length, Allocator.TempJob);
-            var higherPriorityLanes = new NativeHashSet<Entity>(laneHandles.Length, Allocator.TempJob);
-            for (int i = 0; i < laneHandles.Length; i++)
+            // Rebuild controlled lanes only when the road network changes.
+            int currentCount = m_YieldLaneQuery.CalculateEntityCount();
+            if (currentCount != m_LastYieldLaneCount)
             {
-                var lh = laneHandles[i];
-                if (lh.priority == PriorityType.Yield || lh.priority == PriorityType.Stop)
-                    controlledLanes.Add(laneHandleEntities[i]);
-                else
-                    higherPriorityLanes.Add(laneHandleEntities[i]);
-            }
+                m_LastYieldLaneCount = currentCount;
+                m_ControlledLanes.Clear();
 
-            laneHandles.Dispose();
-            laneHandleEntities.Dispose();
-
-            if (controlledLanes.IsEmpty)
-            {
-                controlledLanes.Dispose();
-                higherPriorityLanes.Dispose();
-                return;
-            }
-
-            var allEntities = m_VehicleQuery.ToEntityArray(Allocator.TempJob);
-            var allCurrentLanes = m_VehicleQuery.ToComponentDataArray<CarCurrentLane>(Allocator.TempJob);
-
-            var occupiedLanes = new NativeHashSet<Entity>(allCurrentLanes.Length * 2, Allocator.TempJob);
-            // Crossings that higher-priority vehicles are queued to enter next.
-            var priorityCrossings = new NativeHashSet<Entity>(64, Allocator.TempJob);
-
-            for (int i = 0; i < allCurrentLanes.Length; i++)
-            {
-                var cl = allCurrentLanes[i];
-                occupiedLanes.Add(cl.m_Lane);
-                if (cl.m_ChangeLane != Entity.Null)
-                    occupiedLanes.Add(cl.m_ChangeLane);
-
-                if (higherPriorityLanes.Contains(cl.m_Lane) &&
-                    EntityManager.HasBuffer<CarNavigationLane>(allEntities[i]))
+                var laneHandleEntities = m_YieldLaneQuery.ToEntityArray(Allocator.Temp);
+                var laneHandles = m_YieldLaneQuery.ToComponentDataArray<LaneHandle>(Allocator.Temp);
+                for (int i = 0; i < laneHandles.Length; i++)
                 {
-                    var navBuffer = EntityManager.GetBuffer<CarNavigationLane>(allEntities[i]);
-                    if (navBuffer.Length > 0)
-                        priorityCrossings.Add(navBuffer[0].m_Lane);
+                    var lh = laneHandles[i];
+                    if (lh.priority == PriorityType.Yield || lh.priority == PriorityType.Stop)
+                        m_ControlledLanes.Add(laneHandleEntities[i]);
                 }
+                laneHandles.Dispose();
+                laneHandleEntities.Dispose();
             }
 
-            allCurrentLanes.Dispose();
-            allEntities.Dispose();
-            higherPriorityLanes.Dispose();
+            if (m_ControlledLanes.IsEmpty)
+                return;
+
+            int vehicleCount = m_VehicleQuery.CalculateEntityCount();
+            // occupiedLanes is populated inside CollectPriorityNodesJob to avoid a main-thread sync.
+            var occupiedLanes = new NativeHashSet<Entity>(vehicleCount * 2, Allocator.TempJob);
+            var priorityNodes = new NativeHashSet<Entity>(64, Allocator.TempJob);
+            var nodeArrivals  = new NativeParallelMultiHashMap<Entity, ArrivalInfo>(128, Allocator.TempJob);
+
+            var collectJob = new CollectPriorityNodesJob
+            {
+                ControlledLanes         = m_ControlledLanes,
+                EntityHandle            = GetEntityTypeHandle(),
+                CarCurrentLaneHandle    = GetComponentTypeHandle<CarCurrentLane>(true),
+                CarNavigationLaneLookup = GetBufferLookup<CarNavigationLane>(true),
+                OwnerLookup             = GetComponentLookup<Owner>(true),
+                NodeLaneLookup          = GetComponentLookup<Game.Net.NodeLane>(true),
+                CurveLookup             = GetComponentLookup<Game.Net.Curve>(true),
+                LaneHandleLookup        = GetComponentLookup<LaneHandle>(true),
+                TrafficLightsLookup     = GetComponentLookup<Game.Net.TrafficLights>(true),
+                LaneSignalLookup        = GetComponentLookup<Game.Net.LaneSignal>(true),
+                CarLaneLookup           = GetComponentLookup<Game.Net.CarLane>(true),
+                PriorityNodes           = priorityNodes,
+                NodeArrivals            = nodeArrivals,
+                OccupiedLanes           = occupiedLanes,
+            };
+
+            var collectDep = collectJob.Schedule(m_VehicleQuery, Dependency);
 
             var enforceJob = new EnforceYieldJob
             {
-                ControlledLanes = controlledLanes,
-                OccupiedLanes = occupiedLanes,
-                PriorityCrossings = priorityCrossings,
-                EntityHandle = GetEntityTypeHandle(),
-                CarCurrentLaneHandle = GetComponentTypeHandle<CarCurrentLane>(false),
+                ControlledLanes         = m_ControlledLanes,
+                OccupiedLanes           = occupiedLanes,
+                PriorityNodes           = priorityNodes,
+                NodeArrivals            = nodeArrivals,
+                RightHandRuleEnabled    = Mod.Instance?.Setting?.RightHandRuleEnabled ?? true,
+                LeftTurnYieldEnabled    = Mod.Instance?.Setting?.LeftTurnYieldEnabled ?? true,
+                UnsafeLaneYieldEnabled  = Mod.Instance?.Setting?.UnsafeLaneYieldEnabled ?? true,
+                EntityHandle            = GetEntityTypeHandle(),
+                CarCurrentLaneHandle    = GetComponentTypeHandle<CarCurrentLane>(false),
                 CarNavigationLaneLookup = GetBufferLookup<CarNavigationLane>(true),
+                OwnerLookup             = GetComponentLookup<Owner>(true),
+                NodeLaneLookup          = GetComponentLookup<Game.Net.NodeLane>(true),
+                LaneHandleLookup        = GetComponentLookup<LaneHandle>(true),
+                TrafficLightsLookup     = GetComponentLookup<Game.Net.TrafficLights>(true),
             };
 
-            Dependency = enforceJob.ScheduleParallel(m_VehicleQuery, Dependency);
+            Dependency = enforceJob.ScheduleParallel(m_VehicleQuery, collectDep);
 
-            Dependency = controlledLanes.Dispose(Dependency);
             Dependency = occupiedLanes.Dispose(Dependency);
-            Dependency = priorityCrossings.Dispose(Dependency);
+            Dependency = priorityNodes.Dispose(Dependency);
+            Dependency = nodeArrivals.Dispose(Dependency);
         }
     }
 }
