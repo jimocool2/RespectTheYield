@@ -12,18 +12,22 @@ This mod forces vehicles on yield/stop/unsafe approach lanes to yield when:
 - **Intersection priority**: Any non-yield vehicle is approaching the same intersection
 - **Right-hand rule**: At uncontrolled intersections, vehicles yield to vehicles approaching from the right
 - **Left-turn yield**: Vehicles turning left yield to oncoming straight moving traffic
-- **Traffic lights**: At signal controlled intersections vehicles with a green signal use Right-hand rule and Left-turn yield rules
-- **Unsafe lanes**: Vehicles on unsafe/non-standard lanes yield to all normal lanes
+- **Traffic lights**: At signal controlled intersections vehicles with a green signal use Right-hand and Left-turn yield rules
+- **Unsafe lanes**: Vehicles on unsafe lanes yield to all normal lanes
 
 ## Priority hierarchy
 
-From lowest to highest priority: **Unsafe < Yield = Stop < Default < RightOfWay**
+From lowest to highest priority: **Unsafe -> Yield = Stop -> Default -> RightOfWay**
 
 This means unsafe lane vehicles yield to everyone, yield/stop vehicles yield to default and right of way vehicles, etc.
 
 ## Compatibility
 
-- Requires the **Traffic**
+- Requires the **Traffic** mod
+
+## Removal
+
+This mod is safe to remove and doesn't save data to your save files.
 
 ## Features
 
@@ -36,4 +40,3 @@ This means unsafe lane vehicles yield to everyone, yield/stop vehicles yield to 
 ## Known limitations
 
 - Vehicles on different crossing lanes at the same intersection may not detect each other if both lanes are entered simultaneously
-- Yield evaluation happens every frame without hysteresis

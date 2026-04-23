@@ -1,37 +1,80 @@
-﻿<Publish>
-	<!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
-	<ModId Value="" />
-	<!--Name of the mod to display to players-->
-	<DisplayName Value="RespectTheYield" />
-	<!--Short description of the mod-->
-	<ShortDescription Value="This mod make vehicles respect the yield markings and stop signs" />
-	<!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
-	<!--LongDescription Value="This mod make vehicles respect the yield markings and stop signs" /-->
-	<LongDescription>
-This mod make vehicles respect the yield markings and stop signs
-	</LongDescription>
-	<!--Thumbnail-->
-	<Thumbnail Value="Properties/Thumbnail.png" />
-	<!--Screenshot, can be set multiple times-->
-	<Screenshot Value="" />
-	<!--Tag, can be set multiple times-->
-	<Tag Value="" />
-	<!--Link to the forum post where the mod can be discussed-->
-	<ForumLink Value="" />
-	<!--Version of the mod-->
-	<ModVersion Value="1.0" />
-	<!--Recommended version of the base game to use the mod-->
-	<GameVersion Value="1.0.*" />
-	<!--Dependency for the mod, can be set multiple times-->
-	<Dependency Id="" />
-	<!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
-	<RequiredDLC Value="" />
-	<!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
-	<ChangeLog Value="" />
-	<!--<ChangeLog>
-	</ChangeLog>-->
-	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
-	<ExternalLink Type="" Url="" />
-	<!--Supported values Public, Private, Unlisted-->
-	<AccessLevel Value="Public" />
+<Publish>
+  <!--Id must be set in order to update existed mod. it is not required for publishing mod for the first time-->
+  <ModId Value="141938" />
+  <!--Name of the mod to display to players-->
+  <DisplayName Value="Respect The Yield [BETA]" />
+  <!--Short description of the mod-->
+  <ShortDescription Value="This mod forces vehicles on yield/stop/unsafe approach lanes to yield" />
+  <!--Long description of the mod. Single line or multi line. Supports minimal markdown subset-->
+  <LongDescription># Respect The Yield
+
+---
+
+Respect The Yield is an extension for the Traffic mod.
+
+## What it does
+
+This mod forces vehicles on yield/stop/unsafe approach lanes to yield when:
+
+- **Physical blocking**: Their next crossing lane is already occupied by another vehicle
+- **Intersection priority**: Any non-yield vehicle is approaching the same intersection
+- **Right-hand rule**: At uncontrolled intersections, vehicles yield to vehicles approaching from the right
+- **Left-turn yield**: Vehicles turning left yield to oncoming straight moving traffic
+- **Traffic lights**: At signal controlled intersections vehicles with a green signal use Right-hand and Left-turn yield rules
+- **Unsafe lanes**: Vehicles on unsafe lanes yield to all normal lanes
+
+## Priority hierarchy
+
+From lowest to highest priority: **Unsafe -&gt; Yield = Stop -&gt; Default -&gt; RightOfWay**
+
+This means unsafe lane vehicles yield to everyone, yield/stop vehicles yield to default and right of way vehicles, etc.
+
+## Compatibility
+
+- Requires the **Traffic** mod
+
+## Removal
+
+This mod is safe to remove and doesn't save data to your save files.
+
+## Features
+
+- **Right-hand rule enforcement**: At uncontrolled intersections, vehicles approaching from the right have priority
+- **Left-turn yield**: Left-turning vehicles yield to oncoming traffic that isn't also turning
+- **Configurable toggles**: Enable/disable each rule type in mod settings
+- **Traffic light awareness**: Vehicles check signal state and only yield to vehicles with green signals
+- **Unsafe lane detection**: Unsafe lanes are automatically flagged as lowest priority
+
+## Known limitations
+
+- Vehicles on different crossing lanes at the same intersection may not detect each other if both lanes are entered simultaneously</LongDescription>
+  <!--Thumbnail-->
+  <Thumbnail Value="Properties/Thumbnail.png" />
+  <!--Screenshot, can be set multiple times-->
+  <Screenshot Value="" />
+  <!--Tag, can be set multiple times-->
+  <Tag Value="Code Mod" />
+  <!--Link to the forum post where the mod can be discussed-->
+  <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/respect-the-yield.1918610/" />
+  <!--Version of the mod-->
+  <ModVersion Value="1.0.0" />
+  <!--Recommended version of the base game to use the mod-->
+  <GameVersion Value="1.5.*" />
+  <!--Dependency for the mod, can be set multiple times-->
+  <Dependency Id="80095" />
+  <!--Required DLC, can be set multiple times. Supported values are "Landmark Buildings", "San Fransisco Set", "Beach Properties", "Urban Promenades", "Modern Architecture"-->
+  <RequiredDLC Value="" />
+  <!--Change log for new version. Single line or multi line. Supports minimal markdown subset-->
+  <ChangeLog># 1.0.0 - Initial Release
+
+- Added yield to the right behavior at uncontrolled intersections
+- Improved left turn logic (yields to oncoming traffic going straight)
+- Vehicles now properly respect traffic lights and signal phases
+- Integrated support for yield, stop, and priority signs (Traffic mod)
+- Added priority handling for unsafe lane connections (Traffic mod)
+- Added config options to toggle individual systems or disable the mod</ChangeLog>
+  <!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
+  <ExternalLink Type="github" Url="https://github.com/jimocool2/RespectTheYield" />
+  <!--Supported values Public, Private, Unlisted-->
+  <AccessLevel Value="Unlisted" />
 </Publish>
