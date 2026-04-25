@@ -14,7 +14,7 @@
 	<!--Tag, can be set multiple times-->
 	<Tag Value="Code Mod" />
 	<!--Link to the forum post where the mod can be discussed-->
-	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/respect-the-yield.1918610/" />
+	<ForumLink Value="https://forum.paradoxplaza.com/forum/threads/respect-the-yield-feedback-thread.1918752/" />
 	<!--Version of the mod-->
 	<ModVersion Value="1.0.0" />
 	<!--Recommended version of the base game to use the mod-->
@@ -28,5 +28,5 @@
 	<!--External link, can be set multiple times. supported types are "discord", "github", "youtube", "twitch", "x", "paypal", "patreon", "buymeacoffee", "kofi", "crowdin", "gitlab", "gofundme"-->
 	<ExternalLink Type="github" Url="https://github.com/jimocool2/RespectTheYield" />
 	<!--Supported values Public, Private, Unlisted-->
-	<AccessLevel Value="Unlisted" />
+	<AccessLevel Value="Public" />
 </Publish>
