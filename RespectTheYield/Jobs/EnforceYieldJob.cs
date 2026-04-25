@@ -75,7 +75,7 @@ namespace RespectTheYield.Jobs
             {
                 var lane = navLanes[j].m_Lane;
                 if (!NodeLaneLookup.HasComponent(lane))
-                    break;
+                    continue;
 
                 if (OccupiedLanes.Contains(lane))
                     return true;

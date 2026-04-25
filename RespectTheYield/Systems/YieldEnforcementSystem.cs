@@ -1,6 +1,7 @@
 namespace RespectTheYield.Systems
 {
     using Game;
+    using Game.City;
     using Game.Common;
     using Game.Net;
     using Game.Vehicles;
@@ -15,6 +16,7 @@ namespace RespectTheYield.Systems
         private PrefixLogger m_Log;
         private EntityQuery m_YieldLaneQuery;
         private EntityQuery m_VehicleQuery;
+        private CityConfigurationSystem m_CityConfigSystem;
 
         // Cached controlled lanes rebuilt only when the yield-lane query changes.
         private NativeHashSet<Entity> m_ControlledLanes;
@@ -24,6 +26,7 @@ namespace RespectTheYield.Systems
         {
             base.OnCreate();
             m_Log = new PrefixLogger(nameof(YieldEnforcementSystem));
+            m_CityConfigSystem = World.GetOrCreateSystemManaged<CityConfigurationSystem>();
 
             m_YieldLaneQuery = GetEntityQuery(new EntityQueryDesc
             {
@@ -87,6 +90,8 @@ namespace RespectTheYield.Systems
             if (m_ControlledLanes.IsEmpty)
                 return;
 
+            bool leftHandTraffic = m_CityConfigSystem.leftHandTraffic;
+
             int vehicleCount = m_VehicleQuery.CalculateEntityCount();
             // occupiedLanes is populated inside CollectPriorityNodesJob to avoid a main-thread sync.
             var occupiedLanes = new NativeHashSet<Entity>(vehicleCount * 2, Allocator.TempJob);
@@ -106,6 +111,7 @@ namespace RespectTheYield.Systems
                 TrafficLightsLookup     = GetComponentLookup<Game.Net.TrafficLights>(true),
                 LaneSignalLookup        = GetComponentLookup<Game.Net.LaneSignal>(true),
                 CarLaneLookup           = GetComponentLookup<Game.Net.CarLane>(true),
+                LeftHandTraffic         = leftHandTraffic,
                 PriorityNodes           = priorityNodes,
                 NodeArrivals            = nodeArrivals,
                 OccupiedLanes           = occupiedLanes,

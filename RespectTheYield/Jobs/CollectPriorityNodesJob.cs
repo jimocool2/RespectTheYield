@@ -24,6 +24,7 @@ namespace RespectTheYield.Jobs
         [ReadOnly] public ComponentLookup<Game.Net.TrafficLights> TrafficLightsLookup;
         [ReadOnly] public ComponentLookup<Game.Net.LaneSignal>    LaneSignalLookup;
         [ReadOnly] public ComponentLookup<Game.Net.CarLane>       CarLaneLookup;
+        public bool LeftHandTraffic;
         public NativeHashSet<Entity> PriorityNodes;
         public NativeParallelMultiHashMap<Entity, ArrivalInfo> NodeArrivals;
         public NativeHashSet<Entity> OccupiedLanes;
@@ -100,6 +101,12 @@ namespace RespectTheYield.Jobs
                 var exitDir  = bezier.d.xyz - bezier.c.xyz;
                 float2 entryTangent = math.normalizesafe(new float2(entryDir.x, entryDir.z));
                 float2 exitTangent  = math.normalizesafe(new float2(exitDir.x,  exitDir.z));
+
+                if (LeftHandTraffic)
+                {
+                    entryTangent = new float2(-entryTangent.x, entryTangent.y);
+                    exitTangent  = new float2(-exitTangent.x,  exitTangent.y);
+                }
 
                 PriorityType priority = PriorityType.Default;
                 if (LaneHandleLookup.TryGetComponent(cl.m_Lane, out var lh))
