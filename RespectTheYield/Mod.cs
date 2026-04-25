@@ -3,10 +3,8 @@ using Colossal.Logging;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
-using HarmonyLib;
 using RespectTheYield.Helpers;
 using RespectTheYield.Systems;
-using System.Linq;
 using System.Reflection;
 
 namespace RespectTheYield
@@ -20,9 +18,6 @@ namespace RespectTheYield
         public Setting Setting => m_Setting;
         internal ILog Log { get; set; }
         private PrefixLogger m_Log;
-
-        private Harmony m_harmony;
-        private const string HarmonyId = "cs2.respectTheYield";
 
         public void OnLoad(UpdateSystem updateSystem)
         {
@@ -49,24 +44,12 @@ namespace RespectTheYield
 
             AssetDatabase.global.LoadSettings(nameof(RespectTheYield), m_Setting, new Setting(this));
 
-            // Harmony
-            m_harmony = new Harmony(HarmonyId);
-            m_harmony.PatchAll(Assembly.GetExecutingAssembly());
-
-            var patchedMethods = m_harmony.GetPatchedMethods().ToArray();
-            m_Log.Debug($"Plugin {HarmonyId} made patches! Patched methods: " + patchedMethods);
-            foreach (var patchedMethod in patchedMethods)
-            {
-                m_Log.Debug($"Patched: {patchedMethod.DeclaringType?.FullName}.{patchedMethod.Name}");
-            }
-
             updateSystem.UpdateAt<YieldEnforcementSystem>(SystemUpdatePhase.GameSimulation);
         }
 
         public void OnDispose()
         {
             m_Log.Info("Disposing");
-            m_harmony?.UnpatchAll(HarmonyId);
             m_Setting?.UnregisterInOptionsUI();
             m_Setting = null;
         }
